@@ -14,6 +14,19 @@ metadata = MetaData(naming_convention={
 
 db = SQLAlchemy(metadata=metadata)
 
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, unique=True, nullable=False)
+    password_hash = db.Column(db.String, nullable=False)
+
+    @validates('username')
+    def validate_username(self, key, username):
+        if not username or len(username) < 3:
+            raise ValueError("Username must be at least 3 characters long.")
+        return username
+
 class Workout(db.Model):
     __tablename__ = 'workouts'
 
@@ -26,7 +39,6 @@ class Workout(db.Model):
         CheckConstraint('duration_minutes > 0', name='check_duration_positive'),
     )
 
-    # Relationships
     workout_exercises = db.relationship('WorkoutExercise', back_populates='workout', cascade="all, delete-orphan")
     exercises = association_proxy('workout_exercises', 'exercise')
 
@@ -35,7 +47,6 @@ class Workout(db.Model):
         if notes and len(notes) < 5:
             raise ValueError("Notes must be at least 5 characters long.")
         return notes
-
 
 class Exercise(db.Model):
     __tablename__ = 'exercises'
@@ -49,7 +60,6 @@ class Exercise(db.Model):
         CheckConstraint('length(name) > 0', name='check_name_not_empty'),
     )
 
-    # Relationships
     workout_exercises = db.relationship('WorkoutExercise', back_populates='exercise', cascade="all, delete-orphan")
     workouts = association_proxy('workout_exercises', 'workout')
 
@@ -59,7 +69,6 @@ class Exercise(db.Model):
         if category not in valid_categories:
             raise ValueError(f"Category must be one of: {', '.join(valid_categories)}")
         return category
-
 
 class WorkoutExercise(db.Model):
     __tablename__ = 'workout_exercises'
@@ -72,6 +81,5 @@ class WorkoutExercise(db.Model):
     sets = db.Column(db.Integer)
     duration_seconds = db.Column(db.Integer)
 
-    # Relationships
     workout = db.relationship('Workout', back_populates='workout_exercises')
     exercise = db.relationship('Exercise', back_populates='workout_exercises')
