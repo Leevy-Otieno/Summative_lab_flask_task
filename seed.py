@@ -1,20 +1,34 @@
-from app import app, db, User, Task, bcrypt
+#!/usr/bin/env python3
 
+from app import app
+from models import db, Exercise, Workout, WorkoutExercise
+from datetime import date
+
+# This 'with' block is essential to fix the RuntimeError
 with app.app_context():
-    # Clear existing data
-    db.drop_all()
-    db.create_all()
+    print("Clearing database...")
+    # Delete child records first to avoid foreign key errors
+    WorkoutExercise.query.delete()
+    Exercise.query.delete()
+    Workout.query.delete()
 
-    # Create one test user
-    h_password = bcrypt.generate_password_hash('1234').decode('utf-8')
-    u1 = User(username="coder123", password_hash=h_password)
-    db.session.add(u1)
-    db.session.commit()
-
-    # Add 5 sample tasks
-    for i in range(1, 6):
-        t = Task(title=f"Sample Task {i}", user_id=u1.id)
-        db.session.add(t)
+    print("Seeding exercises...")
+    e1 = Exercise(name="Pushups", category="Strength", equipment_needed=False)
+    e2 = Exercise(name="Running", category="Cardio", equipment_needed=False)
+    e3 = Exercise(name="Deadlift", category="Strength", equipment_needed=True)
     
+    print("Seeding workouts...")
+    w1 = Workout(date=date.today(), duration_minutes=45, notes="Morning strength session")
+    w2 = Workout(date=date.today(), duration_minutes=30, notes="Evening cardio burn")
+
+    db.session.add_all([e1, e2, e3, w1, w2])
     db.session.commit()
-    print("Database seeded! Username: coder123, Password: 1234")
+
+    print("Linking exercises to workouts...")
+    we1 = WorkoutExercise(workout_id=w1.id, exercise_id=e1.id, reps=20, sets=3)
+    we2 = WorkoutExercise(workout_id=w1.id, exercise_id=e3.id, reps=5, sets=5)
+    
+    db.session.add_all([we1, we2])
+    db.session.commit()
+    
+    print("Database successfully seeded!")
